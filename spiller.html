@@ -9,27 +9,35 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
   body { display: grid; place-items: center; }
   /* Filmen holder 16:9 og blir så stor som vinduet tillater, uten at noe blir skåret bort */
-  iframe { display: block; width: min(100vw, 177.78vh); height: min(100vh, 56.25vw); border: 0; }
-  p { color: #ddd; font: 16px Arial, sans-serif; text-align: center; padding-top: 40vh; margin: 0; }
+  #spiller, iframe { display: block; width: min(100vw, 177.78vh); height: min(100vh, 56.25vw); border: 0; }
+  p { color: #ddd; font: 16px Arial, sans-serif; text-align: center; margin: 0; }
 </style>
 </head>
 <body>
+<div id="spiller"></div>
 <script>
 /* Liten spillerside for appen «Kartlegging og forkurs».
-   Legg denne fila på en nettside (https://). Appen åpner den slik: spiller.html?v=<YouTube-ID>
-   Da får YouTube en nettadresse å forholde seg til, og filmen kan spilles inne i appen
-   også når appen er åpnet som fil på elevens maskin. */
+   Appen åpner den slik: spiller.html?v=<YouTube-ID>
+   YouTubes automatiske teksting slås av, fordi filmene har tekst brent inn i bildet. */
 var id = (new URLSearchParams(location.search).get("v") || "").replace(/[^\w-]/g, "");
-if (/^[\w-]{11}$/.test(id)) {
-  var f = document.createElement("iframe");
-  f.src = "https://www.youtube-nocookie.com/embed/" + id + "?rel=0&autoplay=1&playsinline=1";
-  f.title = "Løsningsfilm";
-  f.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
-  f.allowFullscreen = true;
-  f.referrerPolicy = "strict-origin-when-cross-origin";
-  document.body.appendChild(f);
-} else {
+if (!/^[\w-]{11}$/.test(id)) {
   document.body.innerHTML = "<p>Ingen film er valgt.</p>";
+} else {
+  function slaAvTeksting(e) {
+    try { e.target.unloadModule("captions"); } catch (_) {}
+    try { e.target.unloadModule("cc"); } catch (_) {}
+  }
+  window.onYouTubeIframeAPIReady = function () {
+    new YT.Player("spiller", {
+      videoId: id,
+      host: "https://www.youtube-nocookie.com",
+      playerVars: { rel: 0, autoplay: 1, playsinline: 1, cc_load_policy: 0, iv_load_policy: 3 },
+      events: { onReady: slaAvTeksting, onApiChange: slaAvTeksting }
+    });
+  };
+  var s = document.createElement("script");
+  s.src = "https://www.youtube.com/iframe_api";
+  document.head.appendChild(s);
 }
 </script>
 </body>
